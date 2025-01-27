@@ -16,4 +16,4 @@ if __name__ == '__main__':
 
     # pdfをテキストに変換
     pdf2text.pdf2text(config.train_pdf_dir, config.train_text_dir)
-    # pdf2text.pdf2text(config.valid_pdf_dir, config.valid_text_dir)
+    pdf2text.pdf2text(config.valid_pdf_dir, config.valid_text_dir)

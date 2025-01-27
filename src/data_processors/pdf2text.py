@@ -1,6 +1,9 @@
 import os
+import pickle
 from pypdf import PdfReader
 import pypdfium2 as pdfium
+
+from . import ocr_gcv
 
 def get_text_pypdf(fname:str) -> str:
     '''
@@ -25,6 +28,25 @@ def get_text_pdfium(fname:str) -> str:
     
     return text
 
+def get_text_gcv(fname:str) -> str:
+    '''
+    vision apiのレスポンスからテキストを抽出する'''
+    # pdfのファイル名からgcloudのレスポンスが格納されたディレクトリの名前を作成する
+    # あまりよい実装ではない
+    fname = fname.split('/')
+    fname[-2] = 'docs_ocr'
+    ocrdir = os.path.join('/', *fname)
+
+    ocrs = [d for d in os.listdir(ocrdir) if d[-4:]=='.pkl']
+    text = ''
+
+    for ocr in ocrs:
+        respath = os.path.join(ocrdir, ocr)
+        response = pickle.load(open(respath, 'rb'))
+        text += ocr_gcv.extract_text(response)
+    
+    return text
+
 def pdf2text(pdfdir:str, textdir:str) -> None:
     '''
     元データのディレクトリと保存先のディレクトリを指定するとpdfをtxtに変換する'''
@@ -36,7 +58,8 @@ def pdf2text(pdfdir:str, textdir:str) -> None:
         pdfpath = os.path.join(pdfdir, file)
         print(pdfpath)
         # text = get_text_pdfium(pdfpath)
-        text = get_text_pypdf(pdfpath)
+        # text = get_text_pypdf(pdfpath)
+        text = get_text_gcv(pdfpath)
 
         # textでの保存
         textpath = os.path.join(textdir, file+'.txt')
