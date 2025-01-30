@@ -1,6 +1,8 @@
 import os
+
 import config
 from data_processors import company_extractor, pdf2text, pdf2jpg, ocr_gcv
+from llm import database
 
 if __name__ == '__main__':
     # 企業名のリスト作成
@@ -17,3 +19,7 @@ if __name__ == '__main__':
     # pdfをテキストに変換
     pdf2text.pdf2text(config.train_pdf_dir, config.train_text_dir)
     pdf2text.pdf2text(config.valid_pdf_dir, config.valid_text_dir)
+
+    # embeddingとdatabaseへの保存
+    # database.embedding_loop(config.train_text_dir, config.train_db_dir)
+    # database.embedding_loop(config.valid_text_dir, config.valid_db_dir)
