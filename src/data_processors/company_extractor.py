@@ -1,8 +1,8 @@
 
-def save_company_list(train_list_path:str, valid_list_path:str) -> None:
+def save_company_list(test_list_path:str, valid_list_path:str) -> None:
     '''
     企業名とレポート番号の対応表を保存する'''
-    train_company_dict = {
+    test_company_dict = {
         '4℃': '1',
         'IHI': '2',
         '日産': '3',
@@ -36,11 +36,11 @@ def save_company_list(train_list_path:str, valid_list_path:str) -> None:
     '日本化薬': '10',
 }
 
-    # trainの保存
-    train_list = [i[0]+', '+i[1] for i in train_company_dict.items()]
+    # testの保存
+    test_list = [i[0]+', '+i[1] for i in test_company_dict.items()]
 
-    with open(train_list_path, mode='w') as f:
-        f.write('\n'.join(train_list))
+    with open(test_list_path, mode='w') as f:
+        f.write('\n'.join(test_list))
     
     # validの保存
     valid_list = [i[0]+', '+i[1] for i in valid_company_dict.items()]
@@ -52,7 +52,7 @@ def save_company_list(train_list_path:str, valid_list_path:str) -> None:
 
 def gettxtpath(query:str, company_list_path:str) -> str:
     '''
-    質問文と対象のcompany_listのパス(train/valid)を渡すと、
+    質問文と対象のcompany_listのパス(test/valid)を渡すと、
     質問文に関連する企業のファイル番号を返す'''
     company_dict = dict()
     with open(company_list_path, mode='r') as f:
