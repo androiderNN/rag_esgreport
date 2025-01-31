@@ -3,6 +3,7 @@ import shutil
 import pandas as pd
 import time
 import datetime
+import tiktoken
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,10 +20,19 @@ DEPLOYMENT_ID_FOR_EMBEDDING = os.getenv("DEPLOYMENT_ID_FOR_EMBEDDING")
 
 def clean_answer(answer:str) -> str:
     '''
-    回答に改行等が含まれると評価時にエラーとなるので除く'''
+    回答が要件に沿うよう修正する'''
+    # csvのフォーマットに合わせる
+    print(answer)
     answer = answer.replace('\n', '、').replace(',', '、')
     answer = answer.replace("'", '').replace('"', '')
     answer = answer.replace('- ', '')
+
+    # トークン長が長すぎる回答は削除する
+    enc = tiktoken.get_encoding('cl100k_base')
+    if len(enc.encode(answer)) >= 54:
+        print(answer)
+        answer = 'わかりません'
+
     return answer
 
 def make_submission(csvpath:str):
