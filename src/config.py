@@ -19,3 +19,7 @@ test_text_dir = os.path.join(test_dir, 'docs_text')
 valid_text_dir = os.path.join(valid_dir, 'docs_text')
 test_db_dir = os.path.join(test_dir, 'embedding_db')
 valid_db_dir = os.path.join(valid_dir, 'embedding_db')
+
+test_query_path = os.path.join(test_dir, 'query.csv')
+
+export_dir = os.path.join(top_dir, 'export')
