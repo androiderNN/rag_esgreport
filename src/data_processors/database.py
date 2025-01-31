@@ -1,16 +1,12 @@
 import os
 import shutil
-import numpy as np
-from dotenv import load_dotenv
 from openai import AzureOpenAI
 import chromadb
-from langchain.document_loaders import TextLoader
 from langchain.text_splitter import CharacterTextSplitter
 
 AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
 AZURE_OPENAI_ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
 API_VERSION = os.getenv('API_VERSION')
-DEPLOYMENT_ID_FOR_CHAT_COMPLETION = os.getenv('DEPLOYMENT_ID_FOR_CHAT_COMPLETION')
 DEPLOYMENT_ID_FOR_EMBEDDING = os.getenv('DEPLOYMENT_ID_FOR_EMBEDDING')
 
 def azure_embedding_fn(text: str|list[str]) -> list[list]:
@@ -46,7 +42,7 @@ def save_db(name:str, texts:list[str], path:str) -> None:
         ids=[str(i) for i in range(len(texts))]
     )
 
-def text2db(textdir:str, dbdir:str) -> None:
+def text2db(textdir:str, dbdir:str, chunk_size:int =200, chunk_overlap:int =10) -> None:
     '''
     全ファイルのデータベースを保存する'''
     texts = [f for f in os.listdir(textdir) if f[-4:]=='.txt']
@@ -62,13 +58,12 @@ def text2db(textdir:str, dbdir:str) -> None:
 
         splitter = CharacterTextSplitter(
             separator='\n',
-            chunk_size=100,
-            chunk_overlap=5
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap
         )
         text = splitter.split_text(text)
 
         save_db(name=dbname, texts=text, path=dbpath)
-        break
 
 def load_db(path:str) -> chromadb.Collection:
     '''

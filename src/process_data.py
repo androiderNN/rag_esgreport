@@ -1,8 +1,10 @@
 import os
+from dotenv import load_dotenv
 
 import config
-from data_processors import company_extractor, pdf2text, pdf2jpg, ocr_gcv
-from llm import database
+from data_processors import company_extractor, pdf2text, pdf2jpg, ocr_gcv, database
+
+load_dotenv()
 
 if __name__ == '__main__':
     # 企業名のリスト作成
@@ -21,5 +23,5 @@ if __name__ == '__main__':
     pdf2text.pdf2text(config.valid_pdf_dir, config.valid_text_dir)
 
     # embeddingとdatabaseへの保存
-    # database.embedding_loop(config.train_text_dir, config.train_db_dir)
-    # database.embedding_loop(config.valid_text_dir, config.valid_db_dir)
+    # database.text2db(config.train_text_dir, config.train_db_dir)
+    # database.text2db(config.valid_text_dir, config.valid_db_dir)
