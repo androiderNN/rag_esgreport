@@ -24,3 +24,6 @@ test_query_path = os.path.join(test_dir, 'query.csv')
 valid_query_path = os.path.join(valid_dir, 'query.csv')
 
 export_dir = os.path.join(top_dir, 'export')
+
+eval_dir = os.path.join(top_dir, 'download', 'evaluation')
+crag_path = os.path.join(eval_dir, 'crag.py')

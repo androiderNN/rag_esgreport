@@ -1,6 +1,7 @@
 import sys
 import os
 import shutil
+import subprocess
 import pandas as pd
 import time
 import datetime
@@ -22,8 +23,12 @@ DEPLOYMENT_ID_FOR_EMBEDDING = os.getenv("DEPLOYMENT_ID_FOR_EMBEDDING")
 def clean_answer(answer:str) -> str:
     '''
     回答が要件に沿うよう修正する'''
+    # Noneの場合変換　azureのバグlikeな挙動か？
+    if answer is None:
+        print('answer is None')
+        answer = 'わかりません'
+
     # csvのフォーマットに合わせる
-    print(answer)
     answer = answer.replace('\n', '、').replace(',', '、')
     answer = answer.replace("'", '').replace('"', '')
     answer = answer.replace('- ', '')
@@ -33,12 +38,46 @@ def clean_answer(answer:str) -> str:
     if len(enc.encode(answer)) >= 54:
         answer = 'わかりません'
 
-    # Noneの場合変換　azureのバグlikeな挙動か？
-    if answer is None:
-        print('answer is None')
-        answer = 'わかりません'
-
     return answer
+
+def evaluate(query_path, pred_path):
+    '''
+    crag.pyによる評価を行う'''
+    print('\nevaliation================')
+    pred_dir = os.path.dirname(pred_path)
+    command = [
+        'python3', config.crag_path,
+        '--result-dir', pred_dir,
+        '--result-name', os.path.basename(pred_path),
+        '--ans-dir', os.path.join(config.eval_dir, 'data'),
+        '--eval-result-dir', pred_dir
+    ]
+    cr = subprocess.run(command)
+
+    if cr.returncode != 0:
+        raise RuntimeError
+
+    # csv読み込み
+    query_df = pd.read_csv(query_path)
+    query_df.columns = ['index', 'query']
+    answer_df = pd.read_csv(os.path.join(config.eval_dir, 'data', 'ans_txt.csv'))
+    answer_df.columns = ['index', 'g_truth']
+    pred_df = pd.read_csv(pred_path)
+    pred_df.columns = ['index', 'prediction']
+    score_df = pd.read_csv(os.path.join(pred_dir, 'scoring.csv'))
+    score_df.columns = ['index', 'score', 'num_tokens']
+
+    # スコアを数値に変換
+    score_dic = {'Perfect': 1, 'Acceptable': 0.5, 'Missing': 0, 'Incorrect': -1}
+    score_df['score'] = score_df['score'].replace(score_dic)
+
+    # 結合して保存
+    result_df = pd.merge(answer_df, pred_df, on='index')
+    result_df = pd.merge(result_df, score_df, on='index')
+    result_df = pd.merge(result_df, query_df, on='index')
+
+    result_df.to_csv(os.path.join(pred_dir, 'evaluation.csv'), header=True, index=False)
+    os.remove(os.path.join(pred_dir, 'scoring.csv'))
 
 def make_submission(csvpath:str):
     '''
@@ -51,7 +90,7 @@ def make_submission(csvpath:str):
     _ = shutil.copy(csvpath, subpath)
 
     # 圧縮
-    shutil.make_archive(subpath, format=zip, root_dir=savedir, base_dir='submission')
+    shutil.make_archive('submission', format=zip, root_dir=savedir, base_dir='submission')
     # submission削除
     shutil.rmtree(subpath)
 
@@ -107,7 +146,7 @@ def answer_all_questions(isvalid:bool =False) -> None:
         query_df.loc[j, 'answer'] = answer
 
         print(f'{i} {query} : {answer}')
-        time.sleep(1)
+        # time.sleep(1)
     
     # 保存先のパス設定
     dirname = os.path.join(config.export_dir, dirname)
@@ -117,21 +156,27 @@ def answer_all_questions(isvalid:bool =False) -> None:
     query_df.loc[:, ['index', 'answer']].to_csv(pred_path, index=False, header=False)
 
     n_unknown = query_df['answer'].tolist().count('わかりません')
-    print(query_df)
-    print(f'わかりません : {n_unknown} answers')
+    print(f'\nわかりません : {n_unknown} answers')
+
+    # evaluation
+    if isvalid:
+        evaluate(query_path, pred_path)
 
     # zip作成
     make_submission(pred_path)
 
 if __name__ == '__main__':
     arg = sys.argv
+    isvalid = False
 
     if len(arg) >= 2:
         if arg[1] == 'valid':
             isvalid = True
         elif arg[1] == 'test':
-            isvalid = False
+            pass
         else:
             raise ValueError
+
+    print(f'isvalid : {isvalid}')
 
     answer_all_questions(isvalid)
