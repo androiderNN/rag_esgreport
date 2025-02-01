@@ -1,3 +1,4 @@
+import sys
 import os
 import shutil
 import pandas as pd
@@ -30,7 +31,11 @@ def clean_answer(answer:str) -> str:
     # トークン長が長すぎる回答は削除する
     enc = tiktoken.get_encoding('cl100k_base')
     if len(enc.encode(answer)) >= 54:
-        print(answer)
+        answer = 'わかりません'
+
+    # Noneの場合変換　azureのバグlikeな挙動か？
+    if answer is None:
+        print('answer is None')
         answer = 'わかりません'
 
     return answer
@@ -60,7 +65,7 @@ def get_answer(
     pdf_num = company_extractor.gettxtpath(query, comlist_path)
 
     if pdf_num is None: # queryに企業名が含まれない場合
-        return 'わかりません'
+        return '不明'
     
     # 検索と関連情報の抽出
     db_path = os.path.join(db_dir, pdf_num+'.pdf')
@@ -72,16 +77,31 @@ def get_answer(
     answer = getresponse_azure.getresponse(prompt)
     return answer
 
-def answer_all_questions() -> None:
+def answer_all_questions(isvalid:bool =False) -> None:
     '''
     query.csvを読み、全ての質問の回答を得、exportに出力する'''
-    query_df = pd.read_csv(config.test_query_path)
+    if isvalid: # validデータを使用する場合
+        query_path = config.valid_query_path
+        dirname = 'valid_' + datetime.datetime.now().strftime('%m%d-%H-%M-%S')
+        comlist_path = config.valid_company_list
+        db_dir = config.valid_db_dir
+    else:
+        query_path = config.test_query_path
+        dirname = datetime.datetime.now().strftime('%m%d-%H-%M-%S')
+        comlist_path = config.test_company_list
+        db_dir = config.test_db_dir
+
+    query_df = pd.read_csv(query_path)
 
     for i, j in enumerate(query_df.index):        
         query = query_df.loc[j, 'problem']
 
         # 回答
-        answer = get_answer(query)
+        answer = get_answer(
+            query,
+            comlist_path=comlist_path,
+            db_dir=db_dir
+        )
 
         answer = clean_answer(answer)
         query_df.loc[j, 'answer'] = answer
@@ -90,7 +110,6 @@ def answer_all_questions() -> None:
         time.sleep(1)
     
     # 保存先のパス設定
-    dirname = datetime.datetime.now().strftime('%m%d-%H-%M-%S')
     dirname = os.path.join(config.export_dir, dirname)
     os.mkdir(dirname)
 
@@ -105,4 +124,14 @@ def answer_all_questions() -> None:
     make_submission(pred_path)
 
 if __name__ == '__main__':
-    answer_all_questions()
+    arg = sys.argv
+
+    if len(arg) >= 2:
+        if arg[1] == 'valid':
+            isvalid = True
+        elif arg[1] == 'test':
+            isvalid = False
+        else:
+            raise ValueError
+
+    answer_all_questions(isvalid)
