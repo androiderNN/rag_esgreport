@@ -14,9 +14,9 @@ def get_response(path:str):
     image = vision.Image(content=content)
 
     response = client.document_text_detection(image=image)
-    return response
+    return response.full_text_annotation.text
 
-def save_response(imgdir:str, ocrdir:str) -> None:
+def save_ocr(imgdir:str, ocrdir:str) -> None:
     '''
     画像と保存先のパスを渡すと、各画像のocr結果の生データをpickleで保存する'''
     pdflist = [i for i in os.listdir(imgdir) if os.path.isdir(os.path.join(imgdir, i))]
@@ -34,18 +34,15 @@ def save_response(imgdir:str, ocrdir:str) -> None:
         
         for img in imglist: # 画像ファイルのループ
             imgpath = os.path.join(pdf_imgdir, img)
-            pklpath = os.path.join(pdf_ocrdir, img+'.pkl')
+            ocrpath = os.path.join(pdf_ocrdir, img+'.txt')
 
-            if os.path.exists(pklpath): # apiの節約
+            if os.path.exists(ocrpath): # apiの節約
                 continue
 
             # ocrと結果の保存
-            response = get_response(imgpath)
-            pickle.dump(response, open(pklpath, 'wb'))
+            text = get_response(imgpath)
+
+            with open(ocrpath, mode='w') as f:
+                f.write(text)
 
             time.sleep(0.5)
-
-def extract_text(response) -> str:
-    '''
-    google cloudのocrレスポンスからテキストを抽出する'''
-    return response.full_text_annotation.text

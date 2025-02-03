@@ -3,8 +3,6 @@ import pickle
 from pypdf import PdfReader
 import pypdfium2 as pdfium
 
-from . import ocr_gcv
-
 def get_text_pypdf(fname:str) -> str:
     '''
     pdfファイルのパスを渡すとpypdfで読んだtextを返す'''
@@ -41,9 +39,10 @@ def get_text_gcv(fname:str) -> str:
     text = ''
 
     for ocr in ocrs:
-        respath = os.path.join(ocrdir, ocr)
-        response = pickle.load(open(respath, 'rb'))
-        text += ocr_gcv.extract_text(response)
+        ocrpath = os.path.join(ocrdir, ocr)
+        
+        with open(ocrpath) as f:
+            text += f.read()
     
     return text
 

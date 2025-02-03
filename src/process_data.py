@@ -15,8 +15,8 @@ if __name__ == '__main__':
     # pdf2jpg.save_jpg(config.valid_pdf_dir, config.valid_img_dir)
 
     # vision apiでocr
-    # ocr_gcv.save_response(config.test_img_dir, config.test_ocr_dir)
-    # ocr_gcv.save_response(config.valid_img_dir, config.valid_ocr_dir)
+    # ocr_gcv.save_ocr(config.test_img_dir, config.test_ocr_dir)
+    # ocr_gcv.save_ocr(config.valid_img_dir, config.valid_ocr_dir)
 
     # pdfをテキストに変換
     pdf2text.pdf2text(config.test_pdf_dir, config.test_text_dir)
