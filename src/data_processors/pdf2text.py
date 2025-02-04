@@ -26,24 +26,38 @@ def get_text_pdfium(fname:str) -> str:
     
     return text
 
-def get_text_gcv(fname:str) -> str:
+def get_concatted_text(fname:str, txtdirname:str) -> str:
     '''
-    vision apiのレスポンスからテキストを抽出する'''
+    ページごとに分割されたテキストファイルの中身を連結して返す'''
     # pdfのファイル名からgcloudのレスポンスが格納されたディレクトリの名前を作成する
     # あまりよい実装ではない
     fname = fname.split('/')
-    fname[-2] = 'docs_ocr'
-    ocrdir = os.path.join('/', *fname)
+    fname[-2] = txtdirname
+    sourcedir = os.path.join('/', *fname)
 
-    ocrs = [d for d in os.listdir(ocrdir) if d[-4:]=='.pkl']
+    if not os.path.exists(sourcedir):
+        print(f'path {sourcedir} not exist')
+        raise FileNotFoundError
+
+    # mdファイルもあるため拡張子によるフィルターなし
+    files = os.listdir(sourcedir)
     text = ''
 
-    for ocr in ocrs:
-        ocrpath = os.path.join(ocrdir, ocr)
-        
-        with open(ocrpath) as f:
-            text += f.read()
-    
+    for file in files:
+        sourcepath = os.path.join(sourcedir, file)
+
+        # テキスト以外のファイルが存在したときの保険
+        try:
+            with open(sourcepath) as f:
+                text += f.read()
+        except Exception as e:
+            f = input(f'while loading {sourcepath} an error occured. skip?(y/n)') == 'y'
+            
+            if f:
+                continue
+            else:
+                raise e
+
     return text
 
 def pdf2text(pdfdir:str, textdir:str) -> None:
@@ -58,7 +72,8 @@ def pdf2text(pdfdir:str, textdir:str) -> None:
         print(pdfpath)
         # text = get_text_pdfium(pdfpath)
         # text = get_text_pypdf(pdfpath)
-        text = get_text_gcv(pdfpath)
+        # text = get_concatted_text(pdfpath, 'docs_ocr')
+        text = get_concatted_text(pdfpath, 'docs_markdown')
 
         # textでの保存
         textpath = os.path.join(textdir, file+'.txt')
