@@ -2,6 +2,7 @@ import sys
 import os
 import shutil
 import subprocess
+import csv
 import pandas as pd
 import time
 import datetime
@@ -29,7 +30,7 @@ def clean_answer(answer:str) -> str:
         answer = 'わかりません'
 
     # csvのフォーマットに合わせる
-    answer = answer.replace('\n', '、').replace(',', '、')
+    answer = answer.replace('\n', '、')
     answer = answer.replace("'", '').replace('"', '')
     answer = answer.replace('- ', '')
 
@@ -76,7 +77,7 @@ def evaluate(query_path, pred_path):
     result_df = pd.merge(result_df, score_df, on='index')
     result_df = pd.merge(result_df, query_df, on='index')
 
-    result_df.to_csv(os.path.join(pred_dir, 'evaluation.csv'), header=True, index=False)
+    result_df.to_csv(os.path.join(pred_dir, 'evaluation.csv'), header=True, index=False, quoting=csv.QUOTE_ALL)
     os.remove(os.path.join(pred_dir, 'scoring.csv'))
 
 def make_submission(csvpath:str):
@@ -153,7 +154,7 @@ def answer_all_questions(isvalid:bool =False) -> None:
     os.mkdir(dirname)
 
     pred_path = os.path.join(dirname, 'predictions.csv')
-    query_df.loc[:, ['index', 'answer']].to_csv(pred_path, index=False, header=False)
+    query_df.loc[:, ['index', 'answer']].to_csv(pred_path, index=False, header=False, quoting=csv.QUOTE_ALL)
 
     n_unknown = query_df['answer'].tolist().count('わかりません')
     print(f'\nわかりません : {n_unknown} answers')
