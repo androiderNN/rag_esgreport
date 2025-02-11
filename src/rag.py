@@ -12,7 +12,7 @@ load_dotenv()
 
 import config
 from data_processors import company_extractor, database
-from llm import make_prompt, getresponse_azure
+from llm import make_prompt, getresponse_azure, getresponse_gemini
 
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
@@ -58,13 +58,13 @@ def evaluate(query_path, pred_path):
         raise RuntimeError
 
     # csv読み込み
-    query_df = pd.read_csv(query_path, header=None)
+    query_df = pd.read_csv(query_path, header=None, dtype='object')
     query_df.columns = ['index', 'query']
-    answer_df = pd.read_csv(os.path.join(config.eval_dir, 'data', 'ans_txt.csv'), header=None)
+    answer_df = pd.read_csv(os.path.join(config.eval_dir, 'data', 'ans_txt.csv'), header=None, dtype='object')
     answer_df.columns = ['index', 'g_truth']
-    pred_df = pd.read_csv(pred_path, header=None)
+    pred_df = pd.read_csv(pred_path, header=None, dtype='object')
     pred_df.columns = ['index', 'prediction']
-    score_df = pd.read_csv(os.path.join(pred_dir, 'scoring.csv'), header=None)
+    score_df = pd.read_csv(os.path.join(pred_dir, 'scoring.csv'), header=None, dtype='object')
     score_df.columns = ['index', 'score', 'num_tokens']
 
     # スコアを数値に変換
@@ -110,10 +110,13 @@ def get_answer(
     db_path = os.path.join(db_dir, pdf_num+'.pdf')
     contexts = database.get_context(db_path, query, n_results=3)
 
-    # プロンプト作成
-    prompt = make_prompt.make_prompt(query, contexts)
-
+    # 回答作成
+    prompt = make_prompt.make_prompt_chatgpt(query, contexts)
     answer = getresponse_azure.getresponse(prompt)
+
+    # prompt = make_prompt.make_prompt_gemini(query, contexts)
+    # answer = getresponse_gemini.getresponse(prompt)
+
     return answer
 
 def answer_all_questions(isvalid:bool =False) -> None:

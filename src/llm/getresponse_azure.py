@@ -6,14 +6,14 @@ AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 API_VERSION = os.getenv("API_VERSION")
 DEPLOYMENT_ID_FOR_CHAT_COMPLETION = os.getenv("DEPLOYMENT_ID_FOR_CHAT_COMPLETION")
 
-def getresponse(prompt):
-    client = AzureOpenAI(
-        api_key=AZURE_OPENAI_API_KEY,
-        azure_endpoint=AZURE_OPENAI_ENDPOINT,
-        api_version=API_VERSION
-    )
+CLIENT = AzureOpenAI(
+    api_key=AZURE_OPENAI_API_KEY,
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_version=API_VERSION
+)
 
-    response = client.chat.completions.create(
+def getresponse(prompt):
+    response = CLIENT.chat.completions.create(
         model=DEPLOYMENT_ID_FOR_CHAT_COMPLETION,
         messages=prompt,
         max_tokens=4000,     # 応答に使えるトークン数上限
