@@ -88,10 +88,10 @@ def make_submission(csvpath:str):
     os.mkdir(subpath)
 
     # submission/prediction.csv作成
-    _ = shutil.copy(csvpath, subpath)
+    _ = shutil.copyfile(csvpath, os.path.join(subpath, 'submission.csv'))
 
     # 圧縮
-    shutil.make_archive('submission', format=zip, root_dir=savedir, base_dir='submission')
+    shutil.make_archive(os.path.join(savedir, 'submission'), format='zip', root_dir=savedir, base_dir='submission')
     # submission削除
     shutil.rmtree(subpath)
 
@@ -177,6 +177,9 @@ if __name__ == '__main__':
             pass
         else:
             raise ValueError
+    else:
+        print('specify target')
+        raise ValueError
 
     print(f'isvalid : {isvalid}')
 
