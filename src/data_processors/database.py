@@ -43,7 +43,7 @@ def save_db(name:str, texts:list[str], path:str) -> None:
         ids=[str(i) for i in range(len(texts))]
     )
 
-def text2db(mddir:str, dbdir:str, chunk_size:int =400, chunk_overlap:int =30) -> None:
+def text2db(mddir:str, dbdir:str, chunk_size:int =1000, chunk_overlap:int =50) -> None:
     '''
     ページごとに要約を付与してデータベースに追加する'''
     pdf_names = os.listdir(mddir)
