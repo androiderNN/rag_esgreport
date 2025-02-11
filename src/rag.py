@@ -8,7 +8,6 @@ import time
 import datetime
 import tiktoken
 from dotenv import load_dotenv
-
 load_dotenv()
 
 import config
@@ -59,13 +58,13 @@ def evaluate(query_path, pred_path):
         raise RuntimeError
 
     # csv読み込み
-    query_df = pd.read_csv(query_path)
+    query_df = pd.read_csv(query_path, header=None)
     query_df.columns = ['index', 'query']
-    answer_df = pd.read_csv(os.path.join(config.eval_dir, 'data', 'ans_txt.csv'))
+    answer_df = pd.read_csv(os.path.join(config.eval_dir, 'data', 'ans_txt.csv'), header=None)
     answer_df.columns = ['index', 'g_truth']
-    pred_df = pd.read_csv(pred_path)
+    pred_df = pd.read_csv(pred_path, header=None)
     pred_df.columns = ['index', 'prediction']
-    score_df = pd.read_csv(os.path.join(pred_dir, 'scoring.csv'))
+    score_df = pd.read_csv(os.path.join(pred_dir, 'scoring.csv'), header=None)
     score_df.columns = ['index', 'score', 'num_tokens']
 
     # スコアを数値に変換
@@ -159,12 +158,10 @@ def answer_all_questions(isvalid:bool =False) -> None:
     n_unknown = query_df['answer'].tolist().count('わかりません')
     print(f'\nわかりません : {n_unknown} answers')
 
-    # evaluation
-    if isvalid:
+    if isvalid: # evaluation
         evaluate(query_path, pred_path)
-
-    # zip作成
-    make_submission(pred_path)
+    else:   # zip作成
+        make_submission(pred_path)
 
 if __name__ == '__main__':
     arg = sys.argv
