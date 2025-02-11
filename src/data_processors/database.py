@@ -1,5 +1,6 @@
 import os
 import shutil
+import pandas as pd
 from openai import AzureOpenAI
 import chromadb
 from langchain.text_splitter import CharacterTextSplitter
@@ -42,30 +43,43 @@ def save_db(name:str, texts:list[str], path:str) -> None:
         ids=[str(i) for i in range(len(texts))]
     )
 
-def text2db(textdir:str, dbdir:str, chunk_size:int =400, chunk_overlap:int =30) -> None:
+def text2db(mddir:str, dbdir:str, chunk_size:int =400, chunk_overlap:int =30) -> None:
     '''
-    全ファイルのデータベースを保存する'''
-    print(textdir)
-    texts = [f for f in os.listdir(textdir) if f[-4:]=='.txt']
+    ページごとに要約を付与してデータベースに追加する'''
+    pdf_names = os.listdir(mddir)
 
-    for txtfile in texts:
-        print(txtfile)
+    for pdfname in pdf_names:  # 各pdfのmdファイルが格納されたディレクトリをループで回す
+        print(pdfname)
 
-        dbname = os.path.splitext(txtfile)[0]
-        textpath = os.path.join(textdir, txtfile)
-        dbpath = os.path.join(dbdir, dbname)
+        keyword_df = pd.read_csv(os.path.join(mddir, pdfname, 'keywords.csv'))
+        keyword_df.set_index('mdfile', inplace=True)
 
-        with open(textpath) as f:
-            text = f.read()
+        mdfiles = [f for f in os.listdir(os.path.join(mddir, pdfname)) if f[-3:] == '.md']
+        mdfiles.sort()
 
-        splitter = CharacterTextSplitter(
-            separator='\n',
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
-        )
-        text = splitter.split_text(text)
+        texts = list()
 
-        save_db(name=dbname, texts=text, path=dbpath)
+        for mdfile in mdfiles:
+            textpath = os.path.join(mddir, pdfname, mdfile)
+
+            with open(textpath) as f:
+                text = f.read()
+
+            splitter = CharacterTextSplitter(
+                separator='\n',
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap
+            )
+            text = splitter.split_text(text)
+
+            # キーワード付与
+            keywords = keyword_df.loc[os.path.basename(mdfile), 'keywords']
+            text = [f'keywords : {keywords}\n{t}' for t in text]
+
+            texts.extend(text)
+
+        dbpath = os.path.join(dbdir, pdfname)
+        save_db(name=pdfname, texts=texts, path=dbpath)
 
 def load_db(path:str) -> chromadb.Collection:
     '''

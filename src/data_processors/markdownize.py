@@ -1,10 +1,41 @@
 import os
 import time
+import google.api_core
+import google.api_core.exceptions
+import pandas as pd
+import csv
+import google
 import vertexai
 from vertexai.preview.generative_models import GenerativeModel, Image
 
 VERTEX_GENMODEL = os.getenv('VERTEX_GENMODEL')
 genmodel = GenerativeModel(VERTEX_GENMODEL)
+
+def get_text_from_gemini(prompt:list) -> str:
+    '''
+    geminiにプロンプトを送り、レスポンスからテキストのみを返す
+    apiリミットエラーの際3回まで再試行'''
+    c = 0
+    f = True
+
+    while f:
+        try:
+            response = genmodel.generate_content(prompt)
+            text = response.candidates[0].content.parts[0].text
+            f = False
+        except google.api_core.exceptions.ResourceExhausted as e:
+            if c == 3:  # 3回まで再試行
+                break
+
+            c += 1
+            print(f'ResourceExhausted error raised. retrying : {c}')
+            time.sleep(c*30)
+
+    if f:   # レスポンスを得られなかった場合
+        print(e)
+        raise google.api_core.exceptions.ResourceExhausted
+
+    return text
 
 def get_markdown(imagepath:str, ocrpath:str):
     '''
@@ -26,8 +57,53 @@ def get_markdown(imagepath:str, ocrpath:str):
     ]
 
     # マークダウン化
-    response = genmodel.generate_content(prompt)
-    return response.candidates[0].content.parts[0].text
+    text = get_text_from_gemini(prompt)
+    return text
+
+def get_keywords(text:str, n_keys:int =3) -> str:
+    '''
+    1ページ分のテキストからキーワードを抽出する'''
+    # プロンプト
+    prompt = [
+    '下記の文章は、あるpdfファイルの1ページをマークダウン化したものです。'
+    f'この文章の見出しから、このページの主題となるキーワードを{n_keys}単語抽出してください。\n'
+    '抽出の際は、見出しに使用されている単語を特に重視してください。'
+    'この際、企業名はキーワードから除外してください。\n'
+    '単語はカンマで区切り、改行は含めずに回答してください。\n'
+    f'回答には、{n_keys}単語以外の情報は含めないでください\n\n' + \
+    text
+    ]
+
+    # 抽出
+    keywords = get_text_from_gemini(prompt)
+    return keywords.replace('\n', '')
+
+def save_keywords(mddir:str) -> None:
+    '''
+    mdのディレクトリを渡すとその中のmdファイルごとにキーワードを抽出・csvに保存する'''
+    csvname = os.path.join(mddir, 'keywords.csv')
+
+    if os.path.exists(csvname): # 上書きしない
+        return
+
+    mdfiles = [f for f in os.listdir(mddir) if f[-3:] == '.md']
+    mdfiles.sort()
+
+    l = list()
+
+    for md in mdfiles:  # mdファイルごとの処理
+        with open(os.path.join(mddir, md)) as f:
+            text = f.read()
+
+        # キーワード抽出
+        keyword = get_keywords(text)
+        l.append([md, keyword])
+
+        time.sleep(1)
+
+    # csv保存
+    df = pd.DataFrame(l, columns=['mdfile', 'keywords'])
+    df.to_csv(csvname, index=False, header=True, quoting=csv.QUOTE_ALL)
 
 def markdownize(imgdir, ocrdir:str, mddir:str) -> None:
     '''
@@ -65,3 +141,5 @@ def markdownize(imgdir, ocrdir:str, mddir:str) -> None:
                 f.write(md)
 
             time.sleep(1)
+
+        save_keywords(pdf_md_dir)
