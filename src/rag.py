@@ -87,7 +87,7 @@ def make_submission(csvpath:str):
     os.mkdir(subpath)
 
     # submission/prediction.csv作成
-    _ = shutil.copyfile(csvpath, os.path.join(subpath, 'submission.csv'))
+    _ = shutil.copyfile(csvpath, os.path.join(subpath, 'predictions.csv'))
 
     # 圧縮
     shutil.make_archive(os.path.join(savedir, 'submission'), format='zip', root_dir=savedir, base_dir='submission')
